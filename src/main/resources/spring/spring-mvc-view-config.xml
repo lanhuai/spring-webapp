@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+  <!-- REST中根据URL后缀自动判定Content-Type及相应的View -->
+  <bean id="contentNegotiationManager" class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+    <property name="favorPathExtension" value="true"/>
+    <property name="ignoreAcceptHeader" value="true"/>
+    <property name="defaultContentType" value="text/html" />
+    <property name="mediaTypes" >
+      <value>
+        html=text/html
+        json=application/json
+        xml=application/xml
+      </value>
+    </property>
+  </bean>
+
+  <!-- JSP -->
+  <bean id="internalResourceViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+    <property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />
+    <property name="prefix" value="/WEB-INF/jsps/" />
+    <!--<property name="suffix" value=".jsp" />-->
+    <!-- suffix 不做设置,Controller 中 viewName 写成 xxxx.jsp,会匹配到JSP viewResolver -->
+    <!-- 参考 LoginController.showTestJsp() -->
+    <property name="viewNames" value="*jsp" />
+    <property name="order" value="2" />
+  </bean>
+
+  <!-- thymeleaf begin -->
+  <bean id="templateResolver"
+        class="org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver">
+    <property name="prefix" value="/WEB-INF/templates/" />
+    <property name="suffix" value=".html" />
+    <property name="templateMode" value="HTML5" />
+    <property name="cacheable" value="false"/>
+    <property name="characterEncoding" value="UTF-8"/>
+  </bean>
+
+  <bean id="templateEngine"
+        class="org.thymeleaf.spring4.SpringTemplateEngine">
+    <property name="templateResolver" ref="templateResolver" />
+  </bean>
+
+  <bean id="thymeleafViewResolver" class="org.thymeleaf.spring4.view.ThymeleafViewResolver">
+    <property name="templateEngine" ref="templateEngine" />
+    <property name="characterEncoding" value="UTF-8"/>
+    <property name="contentType" value="text/html"/>
+    <!--<property name="viewNames" value="*.html,*.xhtml" />-->
+    <property name="order" value="1" />
+    <property name="excludedViewNames" value="*.xml,*.jsp,*jsp*" />
+  </bean>
+  <!-- thymeleaf end -->
+
+  <!-- 以上的配置效果是: jsp view name 必须是完整文件名, thymeleaf view name 不需要扩展名 -->
+
+  <!-- 使 @RequestMapping("/login") 支持 /login.html URL扩展名的方式 -->
+  <bean id="viewResolver" class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+    <property name="contentNegotiationManager" ref="contentNegotiationManager"/>
+    <property name="viewResolvers">
+      <list>
+        <ref bean="thymeleafViewResolver"/>
+        <ref bean="internalResourceViewResolver"/>
+      </list>
+    </property>
+  </bean>
+
+  <!-- 这里不支持 contentNegotiationManager, 只有 @RequestMapping("/login") 支持 /login.html -->
+  <mvc:view-controller path="/login2" view-name="login" />
+  <mvc:view-controller path="/test2" view-name="test.jsp" />
+
+</beans>
